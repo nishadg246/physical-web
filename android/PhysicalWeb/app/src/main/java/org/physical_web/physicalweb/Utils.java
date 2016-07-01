@@ -40,11 +40,11 @@ import org.uribeacon.scan.util.RegionResolver;
 
 import org.json.JSONException;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.net.URI;
-import java.net.URISyntaxException;
 
 /**
  * This class is for various static utilities, largely for manipulation of data structures provided
@@ -58,7 +58,9 @@ class Utils {
   public static final String GOOGLE_ENDPOINT = "https://physicalweb.googleapis.com";
   public static final int GOOGLE_ENDPOINT_VERSION = 2;
   private static final String SCANTIME_KEY = "scantime";
-  private static final String PUBLIC_KEY = "public";
+  public static final String PUBLIC_KEY = "public";
+  public static final String TITLE_KEY = "title";
+  public static final String DESCRIPTION_KEY = "description";
   private static final String RSSI_KEY = "rssi";
   private static final String TXPOWER_KEY = "tx";
   private static final String PWSTRIPTIME_KEY = "pwstriptime";
@@ -433,6 +435,20 @@ class Utils {
   }
 
   /**
+   * Checks if device is Local
+   * @param urlDevice The device that is getting checked.
+   * @return If the device is local or not.
+   */
+  public static boolean isLocalDevice(UrlDevice urlDevice) {
+    try {
+      urlDevice.getExtraString(TITLE_KEY);
+    } catch (JSONException e) {
+      return false;
+    }
+    return true;
+  }
+
+  /**
    * Gets the device RSSI if it is Bluetooth Low Energy.
    * @param urlDevice The device that is getting checked.
    * @return The RSSI for the device.
@@ -460,6 +476,37 @@ class Utils {
           "Tried to get TX power from non-ble device " + urlDevice.getId(), e);
     }
   }
+
+  /**
+   * Gets the UrlDevice Title.
+   * @param urlDevice The device that is getting checked.
+   * @return The Title for the device.
+   * @throws RuntimeException if no title present.
+   */
+  public static String getTitle(UrlDevice urlDevice) {
+    try {
+      return urlDevice.getExtraString(TITLE_KEY);
+    } catch (JSONException e) {
+      throw new RuntimeException(
+          "Tried to get Title when no title set " + urlDevice.getId(), e);
+    }
+  }
+
+  /**
+   * Gets the UrlDevice Description.
+   * @param urlDevice The device that is getting checked.
+   * @return The Description for the device.
+   * @throws RuntimeException if no description present.
+   */
+  public static String getDescription(UrlDevice urlDevice) {
+    try {
+      return urlDevice.getExtraString(DESCRIPTION_KEY);
+    } catch (JSONException e) {
+      throw new RuntimeException(
+          "Tried to get Description when no description set " + urlDevice.getId(), e);
+    }
+  }
+
 
   /**
    * Gets the amount of time in milliseconds to get the result from the PWS if available.
@@ -563,6 +610,24 @@ class Utils {
      */
     public UrlDeviceBuilder setPublic() {
       addExtra(PUBLIC_KEY, true);
+      return this;
+    }
+
+    /**
+     * Set the title.
+     * @return The builder with title
+     */
+    public UrlDeviceBuilder setTitle(String title) {
+      addExtra(TITLE_KEY, title);
+      return this;
+    }
+
+    /**
+     * Set the description.
+     * @return The builder with description
+     */
+    public UrlDeviceBuilder setDescription(String description) {
+      addExtra(DESCRIPTION_KEY, description);
       return this;
     }
 
