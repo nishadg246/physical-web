@@ -32,6 +32,17 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import java.util.HashMap;
+import java.util.Map;
+import android.content.IntentFilter;
+import android.net.wifi.p2p.WifiP2pConfig;
+import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pManager;
+import android.net.wifi.p2p.WifiP2pManager.ActionListener;
+import android.net.wifi.p2p.WifiP2pManager.Channel;
+import android.net.wifi.p2p.WifiP2pManager.ChannelListener;
+import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo;
+import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
 /**
  * The main entry point for the app.
  */
@@ -41,6 +52,9 @@ public class MainActivity extends Activity {
   private static final int REQUEST_ENABLE_BT = 0;
   private static final int REQUEST_LOCATION = 1;
   private static final String NEARBY_BEACONS_FRAGMENT_TAG = "NearbyBeaconsFragmentTag";
+  private WifiP2pManager mManager;
+  private Channel mChannel;
+
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +62,9 @@ public class MainActivity extends Activity {
     setContentView(R.layout.activity_main);
     Utils.setSharedPreferencesDefaultValues(this);
     PermissionCheck.getInstance().setCheckingPermissions(false);
+    mManager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
+    mChannel = mManager.initialize(this, getMainLooper(), null);
+    //mReceiver = new WiFiDirectBroadcastReceiver(mManager, mChannel, this);
   }
 
   @Override
@@ -69,11 +86,11 @@ public class MainActivity extends Activity {
         return true;
       // If the about menu item was selected
       case R.id.action_about:
-        showAboutFragment();
+        startRegistration();
         return true;
       // If the settings menu item was selected
       case R.id.action_settings:
-        showSettingsFragment();
+        stop();
         return true;
       // If the action bar up button was pressed
       case android.R.id.home:
@@ -221,5 +238,47 @@ public class MainActivity extends Activity {
     SharedPreferences sharedPreferences = getSharedPreferences(preferencesKey,
         Context.MODE_PRIVATE);
     return sharedPreferences.getBoolean(getString(R.string.user_opted_in_flag), false);
+  }
+
+  private void startRegistration() {
+    Map record = new HashMap();
+    record.put("URL", "http://www.google.com");
+    record.put("Title", "Google" + (int) (Math.random() * 1000));
+    record.put("Desc", "Search Engine");
+
+    // Service information.  Pass it an instance name, service type
+    // _protocol._transportlayer , and the map containing
+    // information other devices will want once they connect to this one.
+    WifiP2pDnsSdServiceInfo serviceInfo =
+            WifiP2pDnsSdServiceInfo.newInstance("_test", "_presence._tcp", record);
+
+    // Add the local service, sending the service info, network channel,
+    // and listener that will be used to indicate success or failure of
+    // the request.
+    mManager.addLocalService(mChannel, serviceInfo, new ActionListener() {
+        @Override
+        public void onSuccess() {
+            Log.d(TAG,"addLocalService");
+        }
+
+        @Override
+        public void onFailure(int arg0) {
+            // Command failed.  Check for P2P_UNSUPPORTED, ERROR, or BUSY
+        }
+    });
+  }
+
+  private void stop() {
+    mManager.clearLocalServices(mChannel, new ActionListener() {
+        @Override
+        public void onSuccess() {
+            Log.d(TAG,"clearLocalService");
+        }
+
+        @Override
+        public void onFailure(int arg0) {
+            // Command failed.  Check for P2P_UNSUPPORTED, ERROR, or BUSY
+        }
+    });
   }
 }
